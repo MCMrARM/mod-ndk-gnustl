@@ -1,0 +1,87 @@
+diff --git a/gcc-4.9/libstdc++-v3/include/bits/basic_string.h b/gcc-4.9/libstdc++-v3/include/bits/basic_string.h
+index 89189656b..82384c5de 100644
+--- a/gcc-4.9/libstdc++-v3/include/bits/basic_string.h
++++ b/gcc-4.9/libstdc++-v3/include/bits/basic_string.h
+@@ -3177,4 +3177,14 @@ _GLIBCXX_END_NAMESPACE_VERSION
+ 
+ #endif // C++11
+ 
++namespace std _GLIBCXX_VISIBILITY(default)
++{
++_GLIBCXX_BEGIN_NAMESPACE_VERSION
++
++template <>
++basic_string<char>::_Rep& basic_string<char>::_Rep::_S_empty_rep() _GLIBCXX_NOEXCEPT;
++
++_GLIBCXX_END_NAMESPACE_VERSION
++} // namespace std
++
+ #endif /* _BASIC_STRING_H */
+diff --git a/gcc-4.9/libstdc++-v3/src/Makefile.am b/gcc-4.9/libstdc++-v3/src/Makefile.am
+index 3209ae06f..e6a034efd 100644
+--- a/gcc-4.9/libstdc++-v3/src/Makefile.am
++++ b/gcc-4.9/libstdc++-v3/src/Makefile.am
+@@ -73,7 +73,7 @@ libgnustl_shared_la_DEPENDENCIES = \
+ 	$(top_builddir)/src/c++11/libc++11convenience.la
+ 
+ libgnustl_shared_la_LDFLAGS = \
+-	${libtool_version_info_string} ${version_arg} -lm
++	${libtool_version_info_string} ${version_arg} -lm -ldl
+ 
+ libgnustl_shared_la_LINK = $(CXXLINK) $(libstdc___la_LDFLAGS)
+ 
+diff --git a/gcc-4.9/libstdc++-v3/src/c++11/Makefile.in b/gcc-4.9/libstdc++-v3/src/c++11/Makefile.in
+index 003e7d504..38a32bec9 100644
+--- a/gcc-4.9/libstdc++-v3/src/c++11/Makefile.in
++++ b/gcc-4.9/libstdc++-v3/src/c++11/Makefile.in
+@@ -329,7 +329,8 @@ sources = \
+ 	shared_ptr.cc \
+ 	snprintf_lite.cc \
+ 	system_error.cc \
+-	thread.cc
++	thread.cc \
++	string.cc
+ 
+ # XTEMPLATE_FLAGS =
+ @ENABLE_EXTERN_TEMPLATE_FALSE@inst_sources = 
+diff --git a/gcc-4.9/libstdc++-v3/src/c++11/string-inst.cc b/gcc-4.9/libstdc++-v3/src/c++11/string-inst.cc
+index f19a0b0e9..00dfe6cef 100644
+--- a/gcc-4.9/libstdc++-v3/src/c++11/string-inst.cc
++++ b/gcc-4.9/libstdc++-v3/src/c++11/string-inst.cc
+@@ -30,10 +30,36 @@
+ // in ANSI X3J16/94-0013R2.  Rewritten by Nathan Myers.
+ 
+ #include <string>
++#include <dlfcn.h>
+ 
+ // Instantiation configuration.
+ #ifndef C
+ # define C char
++
++
++namespace std _GLIBCXX_VISIBILITY(default)
++{
++_GLIBCXX_BEGIN_NAMESPACE_VERSION
++
++typedef basic_string<char> S;
++
++static std::basic_string<char>* getMinecraftString() {
++    void* mcpe = dlopen("libminecraftpe.so", RTLD_LAZY);
++    std::basic_string<char>* string = (std::basic_string<char>*) dlsym(mcpe, "_ZN4Util12EMPTY_STRINGE");
++    dlclose(mcpe);
++    return string;
++}
++
++template <>
++basic_string<char>::_Rep& basic_string<char>::_Rep::_S_empty_rep() {
++    static std::basic_string<char>* string = getMinecraftString();
++    return *string->_M_rep();
++}
++
++_GLIBCXX_END_NAMESPACE_VERSION
++} // namespace
++
++
+ #endif
+ 
+ namespace std _GLIBCXX_VISIBILITY(default)
